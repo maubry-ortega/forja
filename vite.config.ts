@@ -10,9 +10,13 @@ export default defineConfig({
     react(),
     legacy()
   ],
+  optimizeDeps: {
+    exclude: ['@capacitor-community/sqlite', 'jeep-sqlite']
+  },
   test: {
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
   }
 })
+
