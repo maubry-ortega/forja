@@ -63,6 +63,59 @@ class DayService {
         return null;
     }
 
+    async getHistory(limit: number = 30): Promise<DailyLog[]> {
+        const db = await databaseService.getDb();
+        const res = await db.query('SELECT * FROM daily_logs ORDER BY date DESC LIMIT ?', [limit]);
+        return res.values || [];
+    }
+
+    async getChartData(days: number = 7) {
+        const db = await databaseService.getDb();
+        // Fetch last N logs
+        const res = await db.query('SELECT date, completed_count, total_count FROM daily_logs ORDER BY date DESC LIMIT ?', [days]);
+        const logs = [...(res.values || [])].reverse();
+
+        const labels = logs.map(l => {
+            const date = new Date(l.date);
+            return date.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric' });
+        });
+
+        const data = logs.map(l => (l.total_count > 0 ? (l.completed_count / l.total_count) * 100 : 0));
+
+        return { labels, data };
+    }
+
+    async getForjaIndex() {
+        const db = await databaseService.getDb();
+        const streak = await streakService.getStreak();
+
+        // Avg completion of last 14 days
+        const res = await db.query('SELECT completed_count, total_count FROM daily_logs ORDER BY date DESC LIMIT 14');
+        const logs = res.values || [];
+
+        let avgCompletion = 0;
+        if (logs.length > 0) {
+            const sum = logs.reduce((acc, log) => {
+                const perc = log.total_count > 0 ? (log.completed_count / log.total_count) : 1; // 1 if no tasks but closed? Or skip?
+                return acc + perc;
+            }, 0);
+            avgCompletion = (sum / logs.length) * 100;
+        }
+
+        // Normalized streak: 30 days = 100% impact
+        const normalizedStreak = Math.min(streak.current_streak / 30, 1) * 100;
+
+        // Weight: 60% completion, 40% streak discipline
+        const index = (avgCompletion * 0.6) + (normalizedStreak * 0.4);
+
+        return {
+            index: Math.round(index),
+            avgCompletion: Math.round(avgCompletion),
+            streakBonus: Math.round(normalizedStreak)
+        };
+    }
+
+
 }
 
 export const dayService = new DayService();
