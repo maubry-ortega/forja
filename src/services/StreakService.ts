@@ -23,18 +23,22 @@ class StreakService {
         let lastDate = streak.last_completed_date;
 
         if (isGoalMet) {
-            // Logic for incrementing: check if yesterday was the last completed date
             if (lastDate) {
                 const last = new Date(lastDate);
                 const currentData = new Date(date);
-                const diffDays = Math.floor((currentData.getTime() - last.getTime()) / (1000 * 3600 * 24));
+                // Reset hours to ensure clean day comparison
+                last.setHours(0, 0, 0, 0);
+                currentData.setHours(0, 0, 0, 0);
+
+                const diffTime = currentData.getTime() - last.getTime();
+                const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
 
                 if (diffDays === 1) {
                     current += 1;
                 } else if (diffDays > 1) {
-                    current = 1; // Reset to 1 if a day was missed
+                    current = 1; // Streak was broken by a gap, starting new streak today
                 }
-                // if diffDays === 0, it's the same day, don't increment
+                // diffDays === 0: already processed this day or same day update, ignore increment
             } else {
                 current = 1;
             }
@@ -42,9 +46,10 @@ class StreakService {
             if (current > best) best = current;
             lastDate = date;
         } else {
-            // If goal wasn't met, we might reset streak immediately or wait for day closure
-            // Usually reset happens if day closure reveals < 100% or threshold
+            // Goal not met for this specific day being closed
             current = 0;
+            // lastDate remains the same as the last successful day, 
+            // but the streak count is broken.
         }
 
         await db.run(
@@ -54,6 +59,7 @@ class StreakService {
         await databaseService.save();
         return { current, best };
     }
+
 }
 
 export const streakService = new StreakService();

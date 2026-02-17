@@ -1,0 +1,69 @@
+.home-container {
+    --padding-start: 20px;
+    --padding-end: 20px;
+}
+
+.date-header {
+    margin-bottom: 24px;
+    opacity: 0.8;
+}
+
+.task-list {
+    background: transparent;
+}
+
+ion-item {
+    --border-radius: 12px;
+    --padding-start: 12px;
+    --inner-padding-end: 12px;
+    margin-bottom: 12px;
+    --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body.ion-palette-dark ion_item {
+    --box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+}
+
+ion-item:active {
+    transform: scale(0.98);
+}
+
+ion-toggle {
+    --handle-background: var(--ion-color-light);
+    --handle-background-checked: var(--ion-color-primary);
+}
+
+.theme-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+}
+
+/* Transitions */
+* {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.task-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.task-time {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 4px;
+    font-size: 0.85rem;
+}
+
+.day-closure-modal {
+    --height: 100%;
+    --width: 100%;
+}
+
+.day-closure-modal ion-content {
+    --background: #000;
+}

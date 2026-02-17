@@ -9,34 +9,46 @@ import {
   IonLabel,
   IonCheckbox,
   IonButton,
-  IonInput,
   IonIcon,
   IonItemSliding,
   IonItemOptions,
   IonItemOption,
   IonBadge,
-  IonText
+  IonText,
+  IonToggle,
+  IonButtons,
+  IonFab,
+  IonFabButton
 } from '@ionic/react';
-import { add, trash, flash } from 'ionicons/icons';
+import { add, trash, flash, moon, sunny } from 'ionicons/icons';
 import React, { useEffect, useState } from 'react';
 import taskService, { Task } from '../services/TaskService';
 import dayService from '../services/DayService';
 import streakService, { Streak } from '../services/StreakService';
 import DayClosureModal from '../components/DayClosureModal';
+import AddTaskModal from '../components/AddTaskModal';
 import './Home.css';
 
 const Home: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [newTaskTime, setNewTaskTime] = useState<string | undefined>(undefined);
   const [streak, setStreak] = useState<Streak | null>(null);
   const [pendingClosureDate, setPendingClosureDate] = useState<string | null>(null);
+  const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
+  const [isDarkMode, setIsDarkMode] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
 
   useEffect(() => {
+    // Check initial theme
+    const isDark = document.body.classList.contains('ion-palette-dark');
+    setIsDarkMode(isDark);
     checkContext();
   }, []);
+
+  const toggleTheme = (enable: boolean) => {
+    setIsDarkMode(enable);
+    document.body.classList.toggle('ion-palette-dark', enable);
+  };
 
   const checkContext = async () => {
     await loadTasks();
@@ -52,7 +64,7 @@ const Home: React.FC = () => {
   const loadTasks = async () => {
     try {
       const fetchedTasks = await taskService.getTasksByDate(today);
-      setTasks(fetchedTasks);
+      setTasks(fetchedTasks || []);
     } catch (error) {
       console.error('Failed to load tasks', error);
     }
@@ -61,23 +73,6 @@ const Home: React.FC = () => {
   const loadStreak = async () => {
     const s = await streakService.getStreak();
     setStreak(s);
-  };
-
-  const addTask = async () => {
-    if (!newTaskTitle.trim()) return;
-    try {
-      await taskService.addTask({
-        title: newTaskTitle,
-        completed: 0,
-        date: today,
-        due_time: newTaskTime
-      });
-      setNewTaskTitle('');
-      setNewTaskTime(undefined);
-      loadTasks();
-    } catch (error) {
-      console.error('Failed to add task', error);
-    }
   };
 
   const toggleTask = async (task: Task) => {
@@ -100,79 +95,81 @@ const Home: React.FC = () => {
 
   const onDayClosed = async () => {
     setPendingClosureDate(null);
-    checkContext(); // Check again if there's another day pending or just refresh today
+    checkContext();
   };
 
   return (
     <IonPage>
-      <IonHeader>
+      <IonHeader className="ion-no-border">
         <IonToolbar color="dark">
-          <IonTitle>Forja</IonTitle>
-          {streak && (
-            <IonBadge slot="end" color="warning" style={{ marginRight: '10px', padding: '5px 10px' }}>
-              <IonIcon icon={flash} /> {streak.current_streak}
-            </IonBadge>
-          )}
+          <IonTitle style={{ fontWeight: 800, fontSize: '1.4rem', letterSpacing: '1px' }}>FORJA</IonTitle>
+          <IonButtons slot="end">
+            <div className="theme-toggle-container">
+              <IonIcon icon={isDarkMode ? moon : sunny} color={isDarkMode ? 'warning' : 'medium'} />
+              <IonToggle
+                checked={isDarkMode}
+                onIonChange={(e) => toggleTheme(e.detail.checked)}
+              />
+            </div>
+            {streak && (
+              <IonBadge color="warning" style={{ marginRight: '16px', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
+                <IonIcon icon={flash} style={{ marginRight: '4px' }} /> {streak.current_streak}
+              </IonBadge>
+            )}
+          </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent fullscreen>
+      <IonContent fullscreen className="home-container">
         <div className="ion-padding">
-          <IonText color="medium">
-            <p style={{ marginTop: 0 }}>Hoy: {today}</p>
-          </IonText>
-
-          <div style={{ background: '#f4f4f4', borderRadius: '15px', padding: '10px', marginBottom: '20px' }}>
-            <IonItem lines="none" style={{ '--background': 'transparent' }}>
-              <IonInput
-                value={newTaskTitle}
-                placeholder="¿Qué forjarás hoy?"
-                onIonInput={(e) => setNewTaskTitle(e.detail.value!)}
-              />
-            </IonItem>
-            <IonItem lines="none" style={{ '--background': 'transparent' }}>
-              <IonLabel slot="start" color="medium" style={{ fontSize: '0.9rem' }}>Hora (opcional):</IonLabel>
-              <IonInput
-                type="time"
-                value={newTaskTime}
-                onIonInput={(e) => setNewTaskTime(e.detail.value!)}
-                style={{ textAlign: 'right' }}
-              />
-              <IonButton slot="end" fill="clear" onClick={addTask}>
-                <IonIcon icon={add} size="large" />
-              </IonButton>
-            </IonItem>
+          <div className="date-header" style={{ marginBottom: '32px' }}>
+            <IonText color="medium">
+              <h1 style={{ margin: 0, fontWeight: 800, fontSize: '2.5rem', textTransform: 'capitalize' }}>Hoy</h1>
+              <p style={{ margin: '4px 0 0 0', fontSize: '1rem', fontStyle: 'italic' }}>
+                {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </p>
+            </IonText>
           </div>
 
-          <IonList>
+          <IonList className="task-list" lines="none">
             {tasks.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '40px' }}>
+              <div style={{ textAlign: 'center', padding: '80px 20px' }}>
+                <IonIcon icon={add} style={{ fontSize: '120px', opacity: 0.05 }} />
                 <IonText color="medium">
-                  <p>No hay tareas para hoy.<br />Añade tu primer desafío.</p>
+                  <p style={{ fontSize: '1.2rem', marginTop: '16px' }}>No hay tareas para hoy.<br />Presiona el botón + para forjar tu voluntad.</p>
                 </IonText>
               </div>
             )}
             {tasks.map((task) => (
               <IonItemSliding key={task.id}>
-                <IonItem>
+                <IonItem className="task-item" style={{
+                  '--background': 'var(--ion-item-background, var(--ion-background-color))',
+                  marginBottom: '16px'
+                }}>
                   <IonCheckbox
                     slot="start"
                     checked={task.completed === 1}
                     onIonChange={() => toggleTask(task)}
+                    color="success"
                   />
                   <IonLabel style={{
-                    textDecoration: task.completed === 1 ? 'line-through' : 'none',
-                    opacity: task.completed === 1 ? 0.6 : 1
+                    opacity: task.completed === 1 ? 0.5 : 1
                   }}>
-                    <div style={{ fontWeight: '500' }}>{task.title}</div>
+                    <div className="task-title" style={{
+                      fontSize: '1.1rem',
+                      fontWeight: 600,
+                      textDecoration: task.completed === 1 ? 'line-through' : 'none',
+                    }}>{task.title}</div>
                     {task.due_time && (
-                      <IonText color="primary" style={{ fontSize: '0.8rem' }}>
-                        <IonIcon icon={flash} style={{ fontSize: '0.8rem', verticalAlign: 'middle' }} /> {task.due_time}
-                      </IonText>
+                      <div className="task-time" style={{ marginTop: '4px', fontSize: '0.9rem' }}>
+                        <IonText color="primary">
+                          <IonIcon icon={flash} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {task.due_time}
+                        </IonText>
+                      </div>
                     )}
                   </IonLabel>
                 </IonItem>
                 <IonItemOptions side="end">
-                  <IonItemOption color="danger" onClick={() => deleteTask(task.id!)}>
+                  <IonItemOption color="danger" onClick={() => deleteTask(task.id!)} style={{ borderRadius: '12px', margin: '0 4px 16px 0' }}>
                     <IonIcon slot="icon-only" icon={trash} />
                   </IonItemOption>
                 </IonItemOptions>
@@ -180,6 +177,19 @@ const Home: React.FC = () => {
             ))}
           </IonList>
         </div>
+
+        <IonFab vertical="bottom" horizontal="end" slot="fixed" style={{ marginBottom: '24px', marginRight: '16px' }}>
+          <IonFabButton onClick={() => setIsAddTaskModalOpen(true)} color="primary" style={{ '--box-shadow': '0 10px 15px -3px rgba(0, 0, 0, 0.4)' }}>
+            <IonIcon icon={add} />
+          </IonFabButton>
+        </IonFab>
+
+        <AddTaskModal
+          isOpen={isAddTaskModalOpen}
+          onDismiss={() => setIsAddTaskModalOpen(false)}
+          onTaskAdded={loadTasks}
+          date={today}
+        />
 
         <DayClosureModal
           isOpen={!!pendingClosureDate}
@@ -192,5 +202,3 @@ const Home: React.FC = () => {
 };
 
 export default Home;
-
-

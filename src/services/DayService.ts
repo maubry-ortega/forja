@@ -29,8 +29,8 @@ class DayService {
         const params = [log.date, log.completed_count, log.total_count, log.reflection];
         await db.run(query, params);
 
-        // Update streak based on 100% completion (adjustable logic)
-        const isGoalMet = log.total_count > 0 && log.completed_count === log.total_count;
+        // Update streak based on completion. If there were no tasks, it's considered "met" (not failed).
+        const isGoalMet = log.completed_count === log.total_count;
         await streakService.updateStreak(isGoalMet, log.date);
 
         await databaseService.save();
@@ -39,20 +39,30 @@ class DayService {
     async getPreviousClosingPending(currentDate: string): Promise<string | null> {
         const db = await databaseService.getDb();
 
-        // Find dates in tasks that are not in daily_logs and are before currentDate
-        const query = `
-      SELECT DISTINCT date FROM tasks 
-      WHERE date < ? 
-      AND date NOT IN (SELECT date FROM daily_logs)
-      ORDER BY date ASC LIMIT 1
-    `;
-        const res = await db.query(query, [currentDate]);
+        // 1. Get the latest date logged in daily_logs
+        const lastLogRes = await db.query('SELECT date FROM daily_logs ORDER BY date DESC LIMIT 1');
 
-        if (res.values && res.values.length > 0) {
-            return res.values[0].date;
+        let startDate: string | null = null;
+        if (lastLogRes.values && lastLogRes.values.length > 0) {
+            // Start checking from the day after the last log
+            const lastDate = new Date(lastLogRes.values[0].date);
+            lastDate.setDate(lastDate.getDate() + 1);
+            startDate = lastDate.toISOString().split('T')[0];
+        } else {
+            // If no logs, check if there are tasks earlier than today
+            const firstTaskRes = await db.query('SELECT date FROM tasks WHERE date < ? ORDER BY date ASC LIMIT 1', [currentDate]);
+            if (firstTaskRes.values && firstTaskRes.values.length > 0) {
+                startDate = firstTaskRes.values[0].date;
+            }
         }
+
+        if (startDate && startDate < currentDate) {
+            return startDate;
+        }
+
         return null;
     }
+
 }
 
 export const dayService = new DayService();

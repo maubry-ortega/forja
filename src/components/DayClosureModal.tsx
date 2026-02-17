@@ -11,8 +11,11 @@ import {
     IonTextarea,
     IonText,
     IonList,
-    IonFooter
+    IonFooter,
+    IonIcon,
+    IonBadge
 } from '@ionic/react';
+import { flash, alertCircle, checkmarkCircle } from 'ionicons/icons';
 import { dayService } from '../services/DayService';
 import streakService, { Streak } from '../services/StreakService';
 
@@ -44,7 +47,6 @@ const DayClosureModal: React.FC<DayClosureModalProps> = ({ isOpen, dateToClose, 
         if (!reflection.trim()) return;
 
         try {
-            console.log('DayClosureModal: Forging day...', dateToClose);
             await dayService.saveDailyLog({
                 date: dateToClose,
                 completed_count: stats?.completed || 0,
@@ -52,65 +54,99 @@ const DayClosureModal: React.FC<DayClosureModalProps> = ({ isOpen, dateToClose, 
                 reflection: reflection
             });
 
-            console.log('DayClosureModal: Day forged successfully');
             setReflection('');
             onClosed();
         } catch (error) {
             console.error('DayClosureModal: Forge failed', error);
-            alert('Error al forjar el día. Revisa la consola.');
         }
     };
 
+    const isPerfect = stats?.total === 0 || stats?.percentage === 100;
+
     return (
         <IonModal isOpen={isOpen} backdropDismiss={false} className="day-closure-modal">
-            <IonHeader>
-                <IonToolbar color="primary">
-                    <IonTitle>Forjar Día: {dateToClose}</IonTitle>
+            <IonHeader className="ion-no-border">
+                <IonToolbar color="dark">
+                    <IonTitle style={{ fontWeight: 800 }}>JUICIO DEL DÍA</IonTitle>
                 </IonToolbar>
             </IonHeader>
-            <IonContent className="ion-padding">
-                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                    <IonText color="medium">
-                        <h1>Resumen del Día</h1>
+            <IonContent className="ion-padding" style={{ '--background': '#000' }}>
+                <div style={{ textAlign: 'center', marginTop: '40px', marginBottom: '40px' }}>
+                    <IonText color="light">
+                        <h2 style={{ fontWeight: 800, fontSize: '1.5rem', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '2px' }}>
+                            {new Date(dateToClose).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </h2>
                     </IonText>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold' }}>
-                        {stats?.completed} / {stats?.total} Tareas
+
+                    <div style={{ margin: '30px 0' }}>
+                        <div style={{ fontSize: '4rem', fontWeight: 900, color: isPerfect ? 'var(--ion-color-success)' : 'var(--ion-color-danger)', lineHeight: '1' }}>
+                            {stats?.percentage.toFixed(0)}%
+                        </div>
+                        <IonText color="medium">
+                            <p style={{ fontWeight: 600, marginTop: '8px', fontSize: '1.1rem' }}>
+                                {stats?.completed} de {stats?.total} desafíos forjados
+                            </p>
+                        </IonText>
                     </div>
-                    <IonText color={stats?.percentage === 100 ? 'success' : 'warning'}>
-                        <h3>{stats?.percentage.toFixed(0)}% Completado</h3>
-                    </IonText>
+
+                    {isPerfect ? (
+                        <div style={{ background: 'rgba(45, 211, 111, 0.1)', padding: '16px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                            <IonIcon icon={checkmarkCircle} color="success" style={{ fontSize: '1.5rem' }} />
+                            <IonText color="success" style={{ fontWeight: 700 }}>VOLUNTAD INQUEBRANTABLE</IonText>
+                        </div>
+                    ) : (
+                        <div style={{ background: 'rgba(235, 68, 90, 0.1)', padding: '16px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '8px', marginBottom: '20px' }}>
+                            <IonIcon icon={alertCircle} color="danger" style={{ fontSize: '1.5rem' }} />
+                            <IonText color="danger" style={{ fontWeight: 700 }}>LA RACHA SE HA ROTO</IonText>
+                        </div>
+                    )}
                 </div>
 
-                <IonList inset={true}>
-                    <IonItem lines="none">
-                        <IonLabel position="stacked">Reflexión Obligatoria</IonLabel>
-                        <IonTextarea
-                            placeholder="¿Qué aprendiste hoy? ¿Por qué no lograste todo? Forja tu voluntad..."
-                            value={reflection}
-                            onIonInput={(e) => setReflection(e.detail.value!)}
-                            rows={6}
-                            autoGrow={true}
-                        />
-                    </IonItem>
-                </IonList>
+                <div style={{ padding: '0 10px' }}>
+                    <IonText color="light">
+                        <p style={{ fontWeight: 700, fontSize: '0.9rem', letterSpacing: '1px', marginBottom: '16px', borderLeft: '4px solid var(--ion-color-primary)', paddingLeft: '12px' }}>
+                            AUTOREFLEXIÓN OBLIGATORIA
+                        </p>
+                    </IonText>
+                    <IonTextarea
+                        placeholder="Examina tu jornada. ¿Qué te detuvo? ¿Qué aprendiste para mañana? Sé brutalmente honesto contigo mismo..."
+                        value={reflection}
+                        onIonInput={(e) => setReflection(e.detail.value!)}
+                        rows={8}
+                        style={{
+                            '--background': '#1a1a1a',
+                            '--color': '#fff',
+                            '--padding-start': '16px',
+                            '--padding-end': '16px',
+                            '--padding-top': '16px',
+                            '--padding-bottom': '16px',
+                            borderRadius: '16px',
+                            fontSize: '1.1rem',
+                            lineHeight: '1.5'
+                        }}
+                    />
+                </div>
 
-                <div style={{ marginTop: '20px', padding: '0 10px' }}>
-                    <IonText color="dark">
-                        <p><strong>Racha Actual:</strong> {streak?.current_streak} días</p>
+                <div style={{ marginTop: '30px', textAlign: 'center' }}>
+                    <IonText color="medium">
+                        <p style={{ fontSize: '0.9rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                            Racha antes de este día: <IonBadge color="warning" style={{ borderRadius: '4px' }}><IonIcon icon={flash} /> {streak?.current_streak}</IonBadge>
+                        </p>
                     </IonText>
                 </div>
             </IonContent>
-            <IonFooter>
-                <IonToolbar>
+            <IonFooter className="ion-no-border">
+                <div style={{ padding: '20px', background: '#000' }}>
                     <IonButton
                         expand="block"
                         onClick={handleForge}
-                        disabled={!reflection.trim()}
-                        color="success"
+                        disabled={!reflection.trim() || reflection.trim().length < 5}
+                        color={isPerfect ? "success" : "warning"}
+                        style={{ height: '64px', fontSize: '1.2rem', fontWeight: 800, '--border-radius': '16px' }}
                     >
                         FORJAR VOLUNTAD
                     </IonButton>
-                </IonToolbar>
+                </div>
             </IonFooter>
         </IonModal>
     );
