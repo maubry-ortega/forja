@@ -13,7 +13,7 @@ import { IonReactRouter } from '@ionic/react-router';
 import { flash, statsChart } from 'ionicons/icons';
 import Home from './pages/Home';
 import History from './pages/History';
-import MorningGreeting from './components/MorningGreeting';
+import MorningGreeting from './components/ui/MorningGreeting';
 
 /* Core CSS required for Ionic components to work properly */
 import '@ionic/react/css/core.css';

@@ -22,17 +22,17 @@ import {
 } from '@ionic/react';
 import { add, trash, flash, moon, sunny, briefcase, fitness, school, person, list, heart } from 'ionicons/icons';
 import React, { useEffect, useState } from 'react';
-import taskService, { Task } from '../services/TaskService';
-import dayService from '../services/DayService';
 import streakService, { Streak } from '../services/StreakService';
+import dayService from '../services/DayService';
 import notificationService from '../services/NotificationService';
-import DayClosureModal from '../components/DayClosureModal';
-import AddTaskModal from '../components/AddTaskModal';
-import VarkoProfileModal from '../components/VarkoProfileModal';
-import VarkoRoaming from '../components/VarkoRoaming';
-import varkoService, { VarkoState } from '../services/VarkoService';
-import phraseService, { DailyPhrase } from '../services/PhraseService';
-import confetti from 'canvas-confetti';
+import { useTasks } from '../hooks/useTasks';
+import { useVarko } from '../hooks/useVarko';
+import { usePhrase } from '../hooks/usePhrase';
+
+import DayClosureModal from '../components/modals/DayClosureModal';
+import AddTaskModal from '../components/modals/AddTaskModal';
+import VarkoProfileModal from '../components/modals/VarkoProfileModal';
+import VarkoRoaming from '../components/ui/VarkoRoaming';
 import './Home.css';
 
 const CATEGORY_MAP: Record<string, { icon: string; color: string }> = {
@@ -45,32 +45,30 @@ const CATEGORY_MAP: Record<string, { icon: string; color: string }> = {
 
 
 const Home: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const today = new Date().toISOString().split('T')[0];
   const [streak, setStreak] = useState<Streak | null>(null);
   const [pendingClosureDate, setPendingClosureDate] = useState<string | null>(null);
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
-  const [varkoState, setVarkoState] = useState<VarkoState | null>(null);
-  const [dailyPhrase, setDailyPhrase] = useState<DailyPhrase | null>(null);
   const [isVarkoProfileOpen, setIsVarkoProfileOpen] = useState(false);
 
-  const today = new Date().toISOString().split('T')[0];
+  // Custom Hooks
+  const { tasks, loadTasks, toggleTask, deleteTask } = useTasks(today);
+  const { varkoState, loadVarko } = useVarko();
+  const { dailyPhrase, loadPhrase } = usePhrase();
 
   useEffect(() => {
     // Check initial theme
     const isDark = document.body.classList.contains('ion-palette-dark');
     setIsDarkMode(isDark);
-    checkContext();
+    initialize();
   }, []);
 
-  const toggleTheme = (enable: boolean) => {
-    setIsDarkMode(enable);
-    document.body.classList.toggle('ion-palette-dark', enable);
-  };
-
-  const checkContext = async () => {
+  const initialize = async () => {
     await loadTasks();
     await loadStreak();
+    await loadVarko();
+    await loadPhrase();
 
     // Check if there's a previous day needing closure
     const pendingDate = await dayService.getPreviousClosingPending(today);
@@ -78,29 +76,12 @@ const Home: React.FC = () => {
       setPendingClosureDate(pendingDate);
     }
 
-    loadVarko();
-    loadPhrase();
     notificationService.scheduleReflectionReminder();
   };
 
-  const loadPhrase = async () => {
-    const p = await phraseService.getDailyPhrase();
-    setDailyPhrase(p);
-  };
-
-  const loadVarko = async () => {
-    const state = await varkoService.getVarkoState();
-    setVarkoState(state);
-  };
-
-
-  const loadTasks = async () => {
-    try {
-      const fetchedTasks = await taskService.getTasksByDate(today);
-      setTasks(fetchedTasks || []);
-    } catch (error) {
-      console.error('Failed to load tasks', error);
-    }
+  const toggleTheme = (enable: boolean) => {
+    setIsDarkMode(enable);
+    document.body.classList.toggle('ion-palette-dark', enable);
   };
 
   const loadStreak = async () => {
@@ -108,39 +89,9 @@ const Home: React.FC = () => {
     setStreak(s);
   };
 
-  const toggleTask = async (task: Task) => {
-    try {
-      const newStatus = task.completed === 1 ? 0 : 1;
-      await taskService.toggleTaskCompletion(task.id!, newStatus);
-
-      if (newStatus === 1) {
-        confetti({
-          particleCount: 100,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#3880ff', '#2dd36f', '#ffc409']
-        });
-      }
-
-      loadTasks();
-      loadVarko();
-    } catch (error) {
-      console.error('Failed to toggle task', error);
-    }
-  };
-
-  const deleteTask = async (id: number) => {
-    try {
-      await taskService.deleteTask(id);
-      loadTasks();
-    } catch (error) {
-      console.error('Failed to delete task', error);
-    }
-  };
-
   const onDayClosed = async () => {
     setPendingClosureDate(null);
-    checkContext();
+    initialize();
   };
 
   return (
@@ -218,7 +169,7 @@ const Home: React.FC = () => {
                   <IonCheckbox
                     slot="start"
                     checked={task.completed === 1}
-                    onIonChange={() => toggleTask(task)}
+                    onIonChange={() => toggleTask(task, loadVarko)}
                     color="success"
                   />
                   <IonLabel style={{

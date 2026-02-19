@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { VarkoState } from '../services/VarkoService';
+import { VarkoState } from '../../services/VarkoService';
 
 interface VarkoRoamingProps {
     state: VarkoState | null;

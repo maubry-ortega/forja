@@ -15,7 +15,7 @@ import {
     IonProgressBar
 } from '@ionic/react';
 import { close, trophy, flash, heart, star } from 'ionicons/icons';
-import { VarkoState } from '../services/VarkoService';
+import { VarkoState } from '../../services/VarkoService';
 
 interface VarkoProfileModalProps {
     isOpen: boolean;

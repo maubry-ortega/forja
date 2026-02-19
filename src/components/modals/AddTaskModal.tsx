@@ -17,7 +17,7 @@ import {
     IonSelectOption
 } from '@ionic/react';
 import { close, flash, briefcase, fitness, school, person, list } from 'ionicons/icons';
-import taskService from '../services/TaskService';
+import taskService from '../../services/TaskService';
 
 interface AddTaskModalProps {
     isOpen: boolean;

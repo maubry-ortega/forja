@@ -16,8 +16,8 @@ import {
     IonBadge
 } from '@ionic/react';
 import { flash, alertCircle, checkmarkCircle } from 'ionicons/icons';
-import { dayService } from '../services/DayService';
-import streakService, { Streak } from '../services/StreakService';
+import { dayService } from '../../services/DayService';
+import streakService, { Streak } from '../../services/StreakService';
 
 interface DayClosureModalProps {
     isOpen: boolean;

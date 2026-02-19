@@ -71,6 +71,38 @@ class NotificationService {
             ]
         });
     }
+
+    async scheduleTaskPrompt() {
+        await this.requestPermissions();
+        const TASK_PROMPT_ID = 8888;
+
+        const pending = await LocalNotifications.getPending();
+        if (pending.notifications.some(n => n.id === TASK_PROMPT_ID)) {
+            return;
+        }
+
+        await LocalNotifications.schedule({
+            notifications: [
+                {
+                    title: 'Forja tu Voluntad',
+                    body: 'No has forjado ningún desafío para hoy. ¡Empieza ahora!',
+                    id: TASK_PROMPT_ID,
+                    schedule: {
+                        on: {
+                            hour: 10,
+                            minute: 0
+                        },
+                        repeats: true,
+                        allowWhileIdle: true
+                    }
+                }
+            ]
+        });
+    }
+
+    async cancelTaskPrompt() {
+        await this.cancelNotification(8888);
+    }
 }
 
 const notificationService = new NotificationService();
