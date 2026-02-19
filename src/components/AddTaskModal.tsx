@@ -63,7 +63,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onDismiss, onTaskAd
     return (
         <IonModal isOpen={isOpen} onDidDismiss={onDismiss} className="add-task-modal">
             <IonHeader className="ion-no-border">
-                <IonToolbar color="dark">
+                <IonToolbar>
                     <IonButtons slot="start">
                         <IonButton onClick={onDismiss}>
                             <IonIcon icon={close} slot="icon-only" />

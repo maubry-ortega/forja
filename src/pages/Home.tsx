@@ -25,6 +25,7 @@ import React, { useEffect, useState } from 'react';
 import taskService, { Task } from '../services/TaskService';
 import dayService from '../services/DayService';
 import streakService, { Streak } from '../services/StreakService';
+import notificationService from '../services/NotificationService';
 import DayClosureModal from '../components/DayClosureModal';
 import AddTaskModal from '../components/AddTaskModal';
 import VarkoProfileModal from '../components/VarkoProfileModal';
@@ -79,6 +80,7 @@ const Home: React.FC = () => {
 
     loadVarko();
     loadPhrase();
+    notificationService.scheduleReflectionReminder();
   };
 
   const loadPhrase = async () => {
@@ -144,8 +146,8 @@ const Home: React.FC = () => {
   return (
     <IonPage>
       <IonHeader className="ion-no-border">
-        <IonToolbar color="dark">
-          <IonTitle slot="start" style={{ fontWeight: 900, fontSize: '1.2rem', letterSpacing: '1px' }}>FORJA</IonTitle>
+        <IonToolbar>
+          <IonTitle slot="start" style={{ fontWeight: 900, fontSize: '1.2rem', letterSpacing: '1px', color: 'var(--header-text-color)' }}>FORJA</IonTitle>
           <IonButtons slot="end">
             {streak && (
               <IonBadge color="warning" style={{ marginRight: '4px', padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>

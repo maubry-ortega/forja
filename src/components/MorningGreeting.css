@@ -1,0 +1,76 @@
+.morning-greeting-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--ion-background-color);
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.morning-greeting-content {
+    padding: 20px;
+}
+
+.morning-icon {
+    font-size: 80px;
+    color: var(--ion-color-warning);
+    margin-bottom: 24px;
+    animation: pulse 2s infinite ease-in-out;
+}
+
+.typewriter-text {
+    font-size: 3rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    margin: 0;
+    min-height: 4rem;
+    color: var(--ion-text-color);
+}
+
+.morning-phrase {
+    font-size: 1.2rem;
+    margin-top: 16px;
+    font-style: italic;
+    opacity: 0;
+    animation: fadeIn 1s forwards 2s;
+}
+
+.morning-hint {
+    margin-top: 40px;
+    font-size: 0.85rem;
+    color: var(--ion-color-medium);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0;
+    animation: fadeIn 1s forwards 3s;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}

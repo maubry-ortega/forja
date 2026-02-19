@@ -66,11 +66,11 @@ const DayClosureModal: React.FC<DayClosureModalProps> = ({ isOpen, dateToClose, 
     return (
         <IonModal isOpen={isOpen} backdropDismiss={false} className="day-closure-modal">
             <IonHeader className="ion-no-border">
-                <IonToolbar color="dark">
+                <IonToolbar>
                     <IonTitle style={{ fontWeight: 800 }}>JUICIO DEL DÍA</IonTitle>
                 </IonToolbar>
             </IonHeader>
-            <IonContent className="ion-padding" style={{ '--background': '#000' }}>
+            <IonContent className="ion-padding" style={{ '--background': 'var(--ion-background-color)' }}>
                 <div style={{ textAlign: 'center', marginTop: '40px', marginBottom: '40px' }}>
                     <IonText color="light">
                         <h2 style={{ fontWeight: 800, fontSize: '1.5rem', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '2px' }}>
@@ -104,7 +104,7 @@ const DayClosureModal: React.FC<DayClosureModalProps> = ({ isOpen, dateToClose, 
 
                 <div style={{ padding: '0 10px' }}>
                     <IonText color="light">
-                        <p style={{ fontWeight: 700, fontSize: '0.9rem', letterSpacing: '1px', marginBottom: '16px', borderLeft: '4px solid var(--ion-color-primary)', paddingLeft: '12px' }}>
+                        <p style={{ fontWeight: 700, fontSize: '0.9rem', letterSpacing: '1px', marginBottom: '16px', borderLeft: '4px solid var(--ion-color-primary)', paddingLeft: '12px', color: 'var(--ion-text-color)' }}>
                             AUTOREFLEXIÓN OBLIGATORIA
                         </p>
                     </IonText>
@@ -114,8 +114,8 @@ const DayClosureModal: React.FC<DayClosureModalProps> = ({ isOpen, dateToClose, 
                         onIonInput={(e) => setReflection(e.detail.value!)}
                         rows={8}
                         style={{
-                            '--background': '#1a1a1a',
-                            '--color': '#fff',
+                            '--background': 'var(--ion-item-background, var(--ion-color-step-100))',
+                            '--color': 'var(--ion-text-color)',
                             '--padding-start': '16px',
                             '--padding-end': '16px',
                             '--padding-top': '16px',
@@ -136,7 +136,7 @@ const DayClosureModal: React.FC<DayClosureModalProps> = ({ isOpen, dateToClose, 
                 </div>
             </IonContent>
             <IonFooter className="ion-no-border">
-                <div style={{ padding: '20px', background: '#000' }}>
+                <div style={{ padding: '20px', background: 'var(--ion-background-color)' }}>
                     <IonButton
                         expand="block"
                         onClick={handleForge}

@@ -40,6 +40,37 @@ class NotificationService {
             notifications: [{ id }]
         });
     }
+
+    async scheduleReflectionReminder() {
+        await this.requestPermissions();
+
+        const REFLECTION_NOTIF_ID = 9999;
+
+        // Check if already scheduled to avoid duplicates
+        const pending = await LocalNotifications.getPending();
+        if (pending.notifications.some(n => n.id === REFLECTION_NOTIF_ID)) {
+            return;
+        }
+
+        await LocalNotifications.schedule({
+            notifications: [
+                {
+                    title: 'Juicio del Día',
+                    body: 'Es hora de examinar tu jornada. Forja tu voluntad.',
+                    id: REFLECTION_NOTIF_ID,
+                    schedule: {
+                        on: {
+                            hour: 21,
+                            minute: 0
+                        },
+                        repeats: true,
+                        allowWhileIdle: true
+                    },
+                    sound: 'beep.wav'
+                }
+            ]
+        });
+    }
 }
 
 const notificationService = new NotificationService();

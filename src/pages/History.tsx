@@ -132,12 +132,12 @@ const History: React.FC = () => {
             y: {
                 beginAtZero: true,
                 max: 100,
-                grid: { color: 'rgba(255, 255, 255, 0.05)' },
-                ticks: { color: '#888', font: { size: 10 } }
+                grid: { color: 'var(--chart-grid)' },
+                ticks: { color: 'var(--chart-tick)', font: { size: 10 } }
             },
             x: {
                 grid: { display: false },
-                ticks: { color: '#888', font: { size: 10 } }
+                ticks: { color: 'var(--chart-tick)', font: { size: 10 } }
             }
         }
     };
@@ -161,8 +161,8 @@ const History: React.FC = () => {
     return (
         <IonPage>
             <IonHeader className="ion-no-border">
-                <IonToolbar color="dark">
-                    <IonTitle style={{ fontWeight: 800 }}>MÉTRICAS</IonTitle>
+                <IonToolbar>
+                    <IonTitle style={{ fontWeight: 800, color: 'var(--header-text-color)' }}>MÉTRICAS</IonTitle>
                     <IonButtons slot="end">
                         <IonButton onClick={exportData}>
                             <IonIcon icon={download} slot="icon-only" />

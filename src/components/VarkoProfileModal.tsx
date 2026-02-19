@@ -38,7 +38,7 @@ const VarkoProfileModal: React.FC<VarkoProfileModalProps> = ({ isOpen, onDismiss
     return (
         <IonModal isOpen={isOpen} onDidDismiss={onDismiss} className="varko-profile-modal">
             <IonHeader className="ion-no-border">
-                <IonToolbar color="dark">
+                <IonToolbar>
                     <IonButtons slot="start">
                         <IonButton onClick={onDismiss}>
                             <IonIcon icon={close} slot="icon-only" />
@@ -47,7 +47,7 @@ const VarkoProfileModal: React.FC<VarkoProfileModalProps> = ({ isOpen, onDismiss
                     <IonTitle style={{ fontWeight: 800 }}>PERFIL DE VARKO</IonTitle>
                 </IonToolbar>
             </IonHeader>
-            <IonContent className="ion-padding" style={{ '--background': '#121212' }}>
+            <IonContent className="ion-padding" style={{ '--background': 'var(--ion-background-color)' }}>
                 <div style={{ textAlign: 'center', padding: '20px 0' }}>
                     <div style={{
                         width: '160px',
@@ -75,8 +75,8 @@ const VarkoProfileModal: React.FC<VarkoProfileModalProps> = ({ isOpen, onDismiss
                         />
                     </div>
 
-                    <IonText color="light">
-                        <h1 style={{ fontWeight: 900, fontSize: '2.2rem', margin: '0 0 8px 0' }}>VARKO</h1>
+                    <IonText>
+                        <h1 style={{ fontWeight: 900, fontSize: '2.2rem', margin: '0 0 8px 0', color: 'var(--ion-text-color)' }}>VARKO</h1>
                         <div style={{
                             display: 'inline-block',
                             padding: '6px 16px',
@@ -98,14 +98,14 @@ const VarkoProfileModal: React.FC<VarkoProfileModalProps> = ({ isOpen, onDismiss
                     <IonGrid>
                         <IonRow>
                             <IonCol size="6">
-                                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '16px' }}>
+                                <div style={{ background: 'var(--ion-item-background, var(--ion-color-step-100))', padding: '16px', borderRadius: '16px' }}>
                                     <IonIcon icon={trophy} color="warning" style={{ fontSize: '2rem', marginBottom: '8px' }} />
                                     <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>ÍNDICE FORJA</div>
                                     <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{state.index}</div>
                                 </div>
                             </IonCol>
                             <IonCol size="6">
-                                <div style={{ background: 'rgba(255,255,255,0.05)', padding: '16px', borderRadius: '16px' }}>
+                                <div style={{ background: 'var(--ion-item-background, var(--ion-color-step-100))', padding: '16px', borderRadius: '16px' }}>
                                     <IonIcon icon={flash} color="warning" style={{ fontSize: '2rem', marginBottom: '8px' }} />
                                     <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>RACHA ACTUAL</div>
                                     <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{state.streak}</div>
@@ -115,8 +115,8 @@ const VarkoProfileModal: React.FC<VarkoProfileModalProps> = ({ isOpen, onDismiss
                     </IonGrid>
 
                     <div style={{ marginTop: '32px', textAlign: 'left', padding: '0 16px' }}>
-                        <IonText color="light">
-                            <h3 style={{ fontWeight: 800, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <IonText>
+                            <h3 style={{ fontWeight: 800, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ion-text-color)' }}>
                                 <IonIcon icon={star} color="warning" />
                                 PROGRESO DE EVOLUCIÓN
                             </h3>

@@ -70,6 +70,12 @@
   --ion-color-light-contrast-rgb: 0, 0, 0;
   --ion-color-light-shade: #d7d8da;
   --ion-color-light-tint: #f5f6f9;
+
+  --card-background: #ffffff;
+  --card-border: rgba(0, 0, 0, 0.05);
+  --chart-grid: rgba(0, 0, 0, 0.05);
+  --chart-tick: #888888;
+  --header-text-color: var(--ion-color-dark);
 }
 
 body.ion-palette-dark {
@@ -135,6 +141,12 @@ body.ion-palette-dark {
   --ion-color-light-contrast-rgb: 255, 255, 255;
   --ion-color-light-shade: #1e2023;
   --ion-color-light-tint: #383a3e;
+
+  --card-background: #1c1c1e;
+  --card-border: rgba(255, 255, 255, 0.05);
+  --chart-grid: rgba(255, 255, 255, 0.05);
+  --chart-tick: #888888;
+  --header-text-color: #ffffff;
 }
 
 /*
