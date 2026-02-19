@@ -3,11 +3,12 @@ import { IonText, IonIcon } from '@ionic/react';
 import { sunny } from 'ionicons/icons';
 import './MorningGreeting.css';
 
+const FULL_TEXT = "BUENOS DÍAS";
+const PHRASE = "Hoy es un gran día para forjar tu voluntad.";
+
 const MorningGreeting: React.FC = () => {
     const [isVisible, setIsVisible] = useState(false);
     const [displayText, setDisplayText] = useState('');
-    const fullText = "BUENOS DÍAS";
-    const phrase = "Hoy es un gran día para forjar tu voluntad.";
 
     useEffect(() => {
         const checkGreeting = () => {
@@ -30,8 +31,9 @@ const MorningGreeting: React.FC = () => {
     const startTypewriter = () => {
         let index = 0;
         const interval = setInterval(() => {
-            if (index < fullText.length) {
-                setDisplayText(prev => prev + fullText[index]);
+            if (index < FULL_TEXT.length) {
+                const char = FULL_TEXT[index];
+                setDisplayText(prev => prev + char);
                 index++;
             } else {
                 clearInterval(interval);
@@ -47,7 +49,7 @@ const MorningGreeting: React.FC = () => {
                 <IonIcon icon={sunny} className="morning-icon" />
                 <h1 className="typewriter-text">{displayText}</h1>
                 <IonText color="medium">
-                    <p className="morning-phrase">{phrase}</p>
+                    <p className="morning-phrase">{PHRASE}</p>
                 </IonText>
                 <div className="morning-hint">Toca para continuar</div>
             </div>
