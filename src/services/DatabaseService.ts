@@ -108,9 +108,43 @@ class DatabaseService {
       );
     `;
 
+        const userStatsTable = `
+      CREATE TABLE IF NOT EXISTS user_stats (
+        id INTEGER PRIMARY KEY DEFAULT 1,
+        strength INTEGER DEFAULT 0,
+        discipline INTEGER DEFAULT 0,
+        wisdom INTEGER DEFAULT 0,
+        total_exp INTEGER DEFAULT 0
+      );
+    `;
+
+        const categoryProgressTable = `
+      CREATE TABLE IF NOT EXISTS category_progress (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT UNIQUE NOT NULL,
+        exp INTEGER DEFAULT 0,
+        level INTEGER DEFAULT 1,
+        color TEXT
+      );
+    `;
+
+        const ritualsTable = `
+      CREATE TABLE IF NOT EXISTS rituals (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        category TEXT,
+        due_time TEXT, -- Optional limit (e.g., 08:00)
+        active INTEGER DEFAULT 1,
+        last_completed_date TEXT
+      );
+    `;
+
         await this.db.execute(tasksTable);
         await this.db.execute(dailyLogsTable);
         await this.db.execute(streakTable);
+        await this.db.execute(userStatsTable);
+        await this.db.execute(categoryProgressTable);
+        await this.db.execute(ritualsTable);
 
         // Apply Migrations for existing users
         await this.applyMigrations();
@@ -119,6 +153,37 @@ class DatabaseService {
         const res = await this.db.query('SELECT COUNT(*) as count FROM streak');
         if (res.values && res.values[0].count === 0) {
             await this.db.run('INSERT INTO streak (current_streak, best_streak) VALUES (0, 0)');
+        }
+
+        // Initialize user_stats if not exists
+        const statsRes = await this.db.query('SELECT COUNT(*) as count FROM user_stats');
+        if (statsRes.values && statsRes.values[0].count === 0) {
+            await this.db.run('INSERT INTO user_stats (id, strength, discipline, wisdom, total_exp) VALUES (1, 0, 0, 0, 0)');
+        }
+
+        // Initialize default categories if not exists
+        const categories = [
+            { name: 'Trabajo', color: '#3880ff' },
+            { name: 'Salud', color: '#2dd36f' },
+            { name: 'Estudio', color: '#5260ff' },
+            { name: 'Personal', color: '#ffc409' },
+            { name: 'Otros', color: '#92949c' }
+        ];
+        for (const cat of categories) {
+            await this.db.run('INSERT OR IGNORE INTO category_progress (name, exp, level, color) VALUES (?, ?, ?, ?)', [cat.name, 0, 1, cat.color]);
+        }
+
+        // Initialize default rituals if not exists
+        const rituals = [
+            { title: 'Madrugar (Antes 08:00)', category: 'Personal', due_time: '08:00' },
+            { title: 'Ejercicio Diario', category: 'Salud', due_time: null },
+            { title: 'Lectura Reflexiva', category: 'Estudio', due_time: null }
+        ];
+        const ritualCount = (await this.db.query('SELECT COUNT(*) as count FROM rituals')).values?.[0].count;
+        if (ritualCount === 0) {
+            for (const ritual of rituals) {
+                await this.db.run('INSERT INTO rituals (title, category, due_time) VALUES (?, ?, ?)', [ritual.title, ritual.category, ritual.due_time]);
+            }
         }
     }
 

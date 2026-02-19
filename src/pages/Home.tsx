@@ -20,16 +20,19 @@ import {
   IonFab,
   IonFabButton
 } from '@ionic/react';
-import { add, trash, flash, moon, sunny, briefcase, fitness, school, person, list, heart } from 'ionicons/icons';
-import React, { useEffect, useState } from 'react';
+import { add, trash, flash, moon, sunny, briefcase, fitness, school, person, list, heart, star, timeOutline, alertCircleOutline, trophy } from 'ionicons/icons';
+import { Haptics, ImpactStyle } from '@capacitor/haptics';
+import React, { useEffect, useState, useCallback } from 'react';
 import taskService, { Task } from '../services/TaskService';
 import streakService, { Streak } from '../services/StreakService';
 import dayService from '../services/DayService';
+import ritualService from '../services/RitualService';
 import notificationService from '../services/NotificationService';
 import { useTasks } from '../hooks/useTasks';
 import { useVarko } from '../hooks/useVarko';
 import { usePhrase } from '../hooks/usePhrase';
 
+import MorningGreetingModal from '../components/modals/MorningGreetingModal';
 import DayClosureModal from '../components/modals/DayClosureModal';
 import AddTaskModal from '../components/modals/AddTaskModal';
 import VarkoProfileModal from '../components/modals/VarkoProfileModal';
@@ -45,7 +48,6 @@ const CATEGORY_MAP: Record<string, { icon: string; color: string }> = {
   'Otros': { icon: list, color: 'var(--ion-color-medium)' },
 };
 
-
 const Home: React.FC = () => {
   const today = new Date().toISOString().split('T')[0];
   const [streak, setStreak] = useState<Streak | null>(null);
@@ -54,14 +56,21 @@ const Home: React.FC = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isVarkoProfileOpen, setIsVarkoProfileOpen] = useState(false);
   const [showTaskPrompt, setShowTaskPrompt] = useState(false);
+  const [showMorningRitual, setShowMorningRitual] = useState(false);
+  const [masterTaskId, setMasterTaskId] = useState<number | null>(null);
+  const [rituals, setRituals] = useState<any[]>([]);
 
   // Custom Hooks
   const { tasks, loadTasks, toggleTask, deleteTask } = useTasks(today);
   const { varkoState, loadVarko } = useVarko();
   const { dailyPhrase, loadPhrase } = usePhrase();
 
+  const loadRituals = useCallback(async () => {
+    const rits = await ritualService.getDailyRitualTasks(today);
+    setRituals(rits);
+  }, [today]);
+
   useEffect(() => {
-    // Check initial theme
     const isDark = document.body.classList.contains('ion-palette-dark');
     setIsDarkMode(isDark);
     initialize();
@@ -69,21 +78,23 @@ const Home: React.FC = () => {
 
   const initialize = async () => {
     const loadedTasks = await loadTasks();
+    await loadRituals();
     await loadStreak();
     await loadVarko();
     await loadPhrase();
 
-    // Check if there's a previous day needing closure
     const pendingDate = await dayService.getPreviousClosingPending(today);
     if (pendingDate) {
       setPendingClosureDate(pendingDate);
     }
 
-    // Logic for Task Prompt Modal
-    const lastPromptDate = localStorage.getItem('last_task_prompt_date');
-    const tasks_count = (await taskService.getTasksByDate(today))?.length || 0;
+    const lastRitualDate = localStorage.getItem('last_morning_ritual_date');
+    if (lastRitualDate !== today && !pendingDate) {
+      setShowMorningRitual(true);
+    }
 
-    if (tasks_count === 0 && lastPromptDate !== today) {
+    const lastPromptDate = localStorage.getItem('last_task_prompt_date');
+    if (loadedTasks?.length === 0 && lastPromptDate !== today && !pendingDate) {
       setShowTaskPrompt(true);
       localStorage.setItem('last_task_prompt_date', today);
     }
@@ -105,6 +116,18 @@ const Home: React.FC = () => {
     setPendingClosureDate(null);
     initialize();
   };
+
+  const handleToggleRitual = async (ritualTask: any) => {
+    if (ritualTask.isExpired) return;
+    try {
+      await Haptics.impact({ style: ImpactStyle.Heavy });
+      await ritualService.completeRitual(ritualTask.ritualId, today);
+      await loadRituals();
+      await loadVarko();
+    } catch (e) { }
+  };
+
+  const allTasks = [...rituals, ...tasks];
 
   return (
     <IonPage>
@@ -162,9 +185,8 @@ const Home: React.FC = () => {
             </div>
           )}
 
-
           <IonList className="task-list" lines="none">
-            {tasks.length === 0 && (
+            {allTasks.length === 0 && (
               <div style={{ textAlign: 'center', padding: '80px 20px' }}>
                 <IonIcon icon={add} style={{ fontSize: '120px', opacity: 0.05 }} />
                 <IonText color="medium">
@@ -172,51 +194,65 @@ const Home: React.FC = () => {
                 </IonText>
               </div>
             )}
-            {tasks.map((task) => (
+            {allTasks.map((task) => (
               <IonItemSliding key={task.id}>
-                <IonItem className="task-item" style={{
-                  '--background': 'var(--ion-item-background, var(--ion-background-color))',
-                  marginBottom: '16px'
+                <IonItem className={`task-item ${task.isRitual ? 'ritual-item' : ''}`} style={{
+                  '--background': task.isRitual ? 'rgba(var(--ion-color-primary-rgb), 0.05)' : 'var(--ion-item-background, var(--ion-background-color))',
+                  marginBottom: '16px',
+                  borderRadius: '16px',
+                  border: task.id === masterTaskId ? '2px solid var(--ion-color-warning)' : 'none'
                 }}>
                   <IonCheckbox
                     slot="start"
                     checked={task.completed === 1}
-                    onIonChange={() => toggleTask(task, loadVarko)}
-                    color="success"
+                    disabled={task.isExpired}
+                    onIonChange={async () => {
+                      if (task.completed === 0) {
+                        try {
+                          await Haptics.impact({ style: ImpactStyle.Heavy });
+                        } catch (e) { }
+                      }
+                      if (task.isRitual) {
+                        handleToggleRitual(task);
+                      } else {
+                        toggleTask(task, loadVarko, masterTaskId);
+                      }
+                    }}
+                    color={task.id === masterTaskId ? "warning" : "success"}
                   />
                   <IonLabel style={{
-                    opacity: task.completed === 1 ? 0.5 : 1
+                    opacity: (task.completed === 1 || task.isExpired) ? 0.5 : 1
                   }}>
                     <div className="task-title-container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {task.category && task.category !== 'default' && (
-                        <IonIcon
-                          icon={CATEGORY_MAP[task.category]?.icon || list}
-                          style={{
-                            color: CATEGORY_MAP[task.category]?.color || 'var(--ion-color-medium)',
-                            fontSize: '1.2rem'
-                          }}
-                        />
-                      )}
+                      {task.isRitual && <IonIcon icon={star} color="primary" style={{ fontSize: '0.9rem' }} />}
+                      {task.id === masterTaskId && <IonIcon icon={trophy} color="warning" style={{ fontSize: '0.9rem' }} />}
                       <div className="task-title" style={{
                         fontSize: '1.1rem',
-                        fontWeight: 600,
+                        fontWeight: (task.isRitual || task.id === masterTaskId) ? 800 : 600,
                         textDecoration: task.completed === 1 ? 'line-through' : 'none',
-                      }}>{task.title}</div>
+                        color: task.isExpired ? 'var(--ion-color-danger)' : 'inherit'
+                      }}>
+                        {task.title}
+                        {task.isRitual && <span style={{ fontSize: '0.7rem', marginLeft: '6px', opacity: 0.6 }}>(Ritual)</span>}
+                      </div>
                     </div>
-                    {task.due_time && (
-                      <div className="task-time" style={{ marginTop: '4px', fontSize: '0.9rem' }}>
-                        <IonText color="primary">
-                          <IonIcon icon={flash} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {task.due_time}
+                    {(task.due_time || task.isExpired) && (
+                      <div className="task-time" style={{ marginTop: '4px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <IonIcon icon={task.isExpired ? alertCircleOutline : timeOutline} color={task.isExpired ? 'danger' : 'primary'} />
+                        <IonText color={task.isExpired ? 'danger' : 'primary'}>
+                          {task.isExpired ? 'Expirado' : task.due_time}
                         </IonText>
                       </div>
                     )}
                   </IonLabel>
                 </IonItem>
-                <IonItemOptions side="end">
-                  <IonItemOption color="danger" onClick={() => deleteTask(task.id!)} style={{ borderRadius: '12px', margin: '0 4px 16px 0' }}>
-                    <IonIcon slot="icon-only" icon={trash} />
-                  </IonItemOption>
-                </IonItemOptions>
+                {!task.isRitual && (
+                  <IonItemOptions side="end">
+                    <IonItemOption color="danger" onClick={() => deleteTask(task.id!)} style={{ borderRadius: '12px', margin: '0 4px 16px 0' }}>
+                      <IonIcon slot="icon-only" icon={trash} />
+                    </IonItemOption>
+                  </IonItemOptions>
+                )}
               </IonItemSliding>
             ))}
           </IonList>
@@ -251,6 +287,16 @@ const Home: React.FC = () => {
           isOpen={showTaskPrompt}
           onDismiss={() => setShowTaskPrompt(false)}
           onAction={() => setIsAddTaskModalOpen(true)}
+        />
+
+        <MorningGreetingModal
+          isOpen={showMorningRitual}
+          onDismiss={() => {
+            setShowMorningRitual(false);
+            localStorage.setItem('last_morning_ritual_date', today);
+          }}
+          tasks={tasks}
+          onMasterTaskSelected={(id) => setMasterTaskId(id)}
         />
       </IonContent>
       <VarkoRoaming state={varkoState} />

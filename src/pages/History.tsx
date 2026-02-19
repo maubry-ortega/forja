@@ -30,6 +30,7 @@ import analyticsService, { WeeklyReport } from '../services/AnalyticsService';
 import databaseService from '../services/DatabaseService';
 import streakService from '../services/StreakService';
 import ProgressReportModal from '../components/modals/ProgressReportModal';
+import RecapModal from '../components/modals/RecapModal';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -64,6 +65,7 @@ const History: React.FC = () => {
     const [categoryStats, setCategoryStats] = useState<Record<string, { total: number; completed: number; percentage: number }> | null>(null);
     const [achievements, setAchievements] = useState<Achievement[]>([]);
     const [isReportOpen, setIsReportOpen] = useState(false);
+    const [isRecapOpen, setIsRecapOpen] = useState(false);
     const [currentReport, setCurrentReport] = useState<WeeklyReport | null>(null);
 
     useEffect(() => {
@@ -190,6 +192,9 @@ const History: React.FC = () => {
                 <IonToolbar>
                     <IonTitle style={{ fontWeight: 800, color: 'var(--header-text-color)' }}>MÉTRICAS</IonTitle>
                     <IonButtons slot="end">
+                        <IonButton onClick={() => setIsRecapOpen(true)} color="warning" fill="clear">
+                            <IonIcon icon={trophy} slot="icon-only" />
+                        </IonButton>
                         <IonButton onClick={handleGenerateReport} color="primary" fill="clear">
                             <IonIcon icon={analytics} slot="icon-only" />
                         </IonButton>
@@ -208,6 +213,11 @@ const History: React.FC = () => {
                     isOpen={isReportOpen}
                     onDismiss={() => setIsReportOpen(false)}
                     report={currentReport}
+                />
+
+                <RecapModal
+                    isOpen={isRecapOpen}
+                    onDismiss={() => setIsRecapOpen(false)}
                 />
 
                 <div className="ion-padding">

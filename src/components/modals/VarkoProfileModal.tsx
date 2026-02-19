@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     IonModal,
     IonHeader,
@@ -9,13 +9,15 @@ import {
     IonButtons,
     IonIcon,
     IonText,
+    IonBadge,
+    IonProgressBar,
     IonGrid,
     IonRow,
-    IonCol,
-    IonProgressBar
+    IonCol
 } from '@ionic/react';
-import { close, trophy, flash, heart, star } from 'ionicons/icons';
+import { close, star, flash, flame, trophy, briefcase, fitness, school, person, list } from 'ionicons/icons';
 import { VarkoState } from '../../services/VarkoService';
+import statsService, { CategoryStats } from '../../services/StatsService';
 
 interface VarkoProfileModalProps {
     isOpen: boolean;
@@ -23,112 +25,131 @@ interface VarkoProfileModalProps {
     state: VarkoState | null;
 }
 
+const CATEGORY_ICONS: Record<string, string> = {
+    'Trabajo': briefcase,
+    'Salud': fitness,
+    'Estudio': school,
+    'Personal': person,
+    'Otros': list
+};
+
 const VarkoProfileModal: React.FC<VarkoProfileModalProps> = ({ isOpen, onDismiss, state }) => {
+    const [categoryStats, setCategoryStats] = useState<CategoryStats[]>([]);
+
+    useEffect(() => {
+        if (isOpen) {
+            loadCategoryStats();
+        }
+    }, [isOpen]);
+
+    const loadCategoryStats = async () => {
+        const stats = await statsService.getCategoryStats();
+        setCategoryStats(stats);
+    };
+
     if (!state) return null;
 
-    const getLevelColor = () => {
-        switch (state.level) {
-            case 'Apex': return 'var(--ion-color-warning)';
-            case 'Dominante': return 'var(--ion-color-secondary)';
-            case 'Cazador': return 'var(--ion-color-success)';
-            default: return 'var(--ion-color-medium)';
+    const getMoodBadge = () => {
+        switch (state.mood) {
+            case 'Feroz': return { color: 'danger', icon: flame };
+            case 'Motivado': return { color: 'success', icon: star };
+            case 'Cansado': return { color: 'medium', icon: flash };
+            default: return { color: 'primary', icon: flash };
         }
     };
+
+    const moodBadge = getMoodBadge();
+    const nextLevelExp = state.level === 'Apex' ? state.stats.total_exp : (state.level === 'Dominante' ? 1000 : (state.level === 'Cazador' ? 500 : 150));
+    const prevLevelExp = state.level === 'Apex' ? 1000 : (state.level === 'Dominante' ? 500 : (state.level === 'Cazador' ? 150 : 0));
+    const progressValue = Math.min(1, Math.max(0, (state.stats.total_exp - prevLevelExp) / (nextLevelExp - prevLevelExp)));
 
     return (
         <IonModal isOpen={isOpen} onDidDismiss={onDismiss} className="varko-profile-modal">
             <IonHeader className="ion-no-border">
                 <IonToolbar>
-                    <IonButtons slot="start">
+                    <IonTitle style={{ fontWeight: 800 }}>ESTADO DE VARKO</IonTitle>
+                    <IonButtons slot="end">
                         <IonButton onClick={onDismiss}>
                             <IonIcon icon={close} slot="icon-only" />
                         </IonButton>
                     </IonButtons>
-                    <IonTitle style={{ fontWeight: 800 }}>PERFIL DE VARKO</IonTitle>
                 </IonToolbar>
             </IonHeader>
-            <IonContent className="ion-padding" style={{ '--background': 'var(--ion-background-color)' }}>
-                <div style={{ textAlign: 'center', padding: '20px 0' }}>
-                    <div style={{
-                        width: '160px',
-                        height: '160px',
-                        margin: '0 auto 24px',
-                        position: 'relative'
-                    }}>
-                        <div style={{
-                            position: 'absolute',
-                            top: 0, left: 0, right: 0, bottom: 0,
-                            background: getLevelColor(),
-                            opacity: 0.15,
-                            borderRadius: '50%',
-                            filter: 'blur(20px)'
-                        }} />
+            <IonContent className="ion-padding" style={{ textAlign: 'center' }}>
+                <div style={{ padding: '20px 0' }}>
+                    <div style={{ position: 'relative', width: '140px', height: '140px', margin: '0 auto 24px auto' }}>
                         <img
                             src="/assets/VARKO.png"
-                            alt="Varko Large"
+                            alt="Varko Mascot"
                             style={{
                                 width: '100%',
                                 height: '100%',
                                 objectFit: 'contain',
-                                filter: state.level === 'Cría' ? 'grayscale(0.5)' : 'none'
+                                filter: state.mood === 'Feroz' ? 'drop-shadow(0 0 15px rgba(255,68,68,0.6))' :
+                                    state.mood === 'Motivado' ? 'drop-shadow(0 0 15px rgba(45,211,111,0.6))' : 'none'
                             }}
                         />
+                        <div style={{ position: 'absolute', bottom: '-5px', right: '0' }}>
+                            <IonBadge color={moodBadge.color} style={{ padding: '6px 10px', borderRadius: '10px', fontSize: '0.75rem' }}>
+                                <IonIcon icon={moodBadge.icon} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                                {state.mood}
+                            </IonBadge>
+                        </div>
                     </div>
 
                     <IonText>
-                        <h1 style={{ fontWeight: 900, fontSize: '2.2rem', margin: '0 0 8px 0', color: 'var(--ion-text-color)' }}>VARKO</h1>
-                        <div style={{
-                            display: 'inline-block',
-                            padding: '6px 16px',
-                            background: getLevelColor(),
-                            color: '#000',
-                            borderRadius: '20px',
-                            fontWeight: 900,
-                            fontSize: '0.9rem',
-                            textTransform: 'uppercase',
-                            marginBottom: '16px'
-                        }}>
-                            {state.level}
-                        </div>
-                        <p style={{ fontStyle: 'italic', opacity: 0.8, fontSize: '1.1rem', maxWidth: '80%', margin: '0 auto 32px' }}>
+                        <h2 style={{ fontSize: '1.8rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '2px', marginBottom: '4px' }}>
+                            VARKO {state.level}
+                        </h2>
+                        <p style={{ fontSize: '1rem', fontStyle: 'italic', opacity: 0.7, marginBottom: '24px', padding: '0 20px' }}>
                             "{state.message}"
                         </p>
                     </IonText>
 
-                    <IonGrid>
-                        <IonRow>
-                            <IonCol size="6">
-                                <div style={{ background: 'var(--ion-item-background, var(--ion-color-step-100))', padding: '16px', borderRadius: '16px' }}>
-                                    <IonIcon icon={trophy} color="warning" style={{ fontSize: '2rem', marginBottom: '8px' }} />
-                                    <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>ÍNDICE FORJA</div>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{state.index}</div>
-                                </div>
-                            </IonCol>
-                            <IonCol size="6">
-                                <div style={{ background: 'var(--ion-item-background, var(--ion-color-step-100))', padding: '16px', borderRadius: '16px' }}>
-                                    <IonIcon icon={flash} color="warning" style={{ fontSize: '2rem', marginBottom: '8px' }} />
-                                    <div style={{ fontSize: '0.8rem', opacity: 0.6 }}>RACHA ACTUAL</div>
-                                    <div style={{ fontSize: '1.5rem', fontWeight: 800 }}>{state.streak}</div>
-                                </div>
-                            </IonCol>
-                        </IonRow>
-                    </IonGrid>
-
-                    <div style={{ marginTop: '32px', textAlign: 'left', padding: '0 16px' }}>
+                    <div style={{ marginBottom: '32px' }}>
                         <IonText>
-                            <h3 style={{ fontWeight: 800, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--ion-text-color)' }}>
-                                <IonIcon icon={star} color="warning" />
-                                PROGRESO DE EVOLUCIÓN
+                            <h3 style={{ fontWeight: 800, fontSize: '0.8rem', textAlign: 'left', padding: '0 16px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.6 }}>
+                                DOMINIO POR CATEGORÍA
                             </h3>
                         </IonText>
-                        <div style={{ marginTop: '12px' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '0.85rem' }}>
-                                <IonText color="medium">Maestría de Voluntad</IonText>
-                                <IonText color="light">{state.index}%</IonText>
-                            </div>
-                            <IonProgressBar value={state.index / 100} color="warning" style={{ height: '8px', borderRadius: '4px' }} />
-                        </div>
+                        <IonGrid>
+                            <IonRow>
+                                {categoryStats.map(cat => (
+                                    <IonCol size="4" key={cat.name}>
+                                        <div style={{
+                                            background: 'rgba(var(--ion-color-step-100-rgb), 0.05)',
+                                            padding: '10px',
+                                            borderRadius: '16px',
+                                            textAlign: 'center',
+                                            border: `1px solid ${cat.color}22`
+                                        }}>
+                                            <IonIcon icon={CATEGORY_ICONS[cat.name] || list} style={{ color: cat.color, fontSize: '1.4rem', marginBottom: '2px' }} />
+                                            <div style={{ fontSize: '0.6rem', opacity: 0.5, textTransform: 'uppercase' }}>{cat.name}</div>
+                                            <div style={{ fontSize: '1rem', fontWeight: 800 }}>Nvl {cat.level}</div>
+                                        </div>
+                                    </IonCol>
+                                ))}
+                            </IonRow>
+                        </IonGrid>
                     </div>
+
+                    <div style={{ textAlign: 'left', padding: '0 16px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                            <IonText style={{ fontWeight: 700, fontSize: '0.9rem' }}>EXPERIENCIA TOTAL</IonText>
+                            <IonText color="primary" style={{ fontWeight: 800 }}>{state.stats.total_exp} XP</IonText>
+                        </div>
+                        <IonProgressBar value={progressValue} color="primary" style={{ height: '10px', borderRadius: '5px' }} />
+                        <IonText color="medium" style={{ fontSize: '0.75rem', marginTop: '4px', display: 'block', textAlign: 'right' }}>
+                            {state.level === 'Apex' ? 'Nivel Máximo' : `Próximo nivel en ${nextLevelExp - state.stats.total_exp} XP`}
+                        </IonText>
+                    </div>
+                </div>
+
+                <div style={{ padding: '20px 16px', background: 'rgba(0,0,0,0.03)', borderRadius: '20px', marginTop: '16px', textAlign: 'left' }}>
+                    <IonText>
+                        <h4 style={{ margin: '0 0 4px 0', fontWeight: 800, fontSize: '0.9rem' }}>SOBRE ESTA FORMA</h4>
+                        <p style={{ margin: 0, opacity: 0.7, fontSize: '0.85rem' }}>{state.description}</p>
+                    </IonText>
                 </div>
             </IonContent>
         </IonModal>
