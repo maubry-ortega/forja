@@ -20,14 +20,28 @@ import {
   IonFab,
   IonFabButton
 } from '@ionic/react';
-import { add, trash, flash, moon, sunny } from 'ionicons/icons';
+import { add, trash, flash, moon, sunny, briefcase, fitness, school, person, list, heart } from 'ionicons/icons';
 import React, { useEffect, useState } from 'react';
 import taskService, { Task } from '../services/TaskService';
 import dayService from '../services/DayService';
 import streakService, { Streak } from '../services/StreakService';
 import DayClosureModal from '../components/DayClosureModal';
 import AddTaskModal from '../components/AddTaskModal';
+import VarkoProfileModal from '../components/VarkoProfileModal';
+import VarkoRoaming from '../components/VarkoRoaming';
+import varkoService, { VarkoState } from '../services/VarkoService';
+import phraseService, { DailyPhrase } from '../services/PhraseService';
+import confetti from 'canvas-confetti';
 import './Home.css';
+
+const CATEGORY_MAP: Record<string, { icon: string; color: string }> = {
+  'Trabajo': { icon: briefcase, color: 'var(--ion-color-secondary)' },
+  'Salud': { icon: fitness, color: 'var(--ion-color-success)' },
+  'Estudio': { icon: school, color: 'var(--ion-color-tertiary)' },
+  'Personal': { icon: person, color: 'var(--ion-color-warning)' },
+  'Otros': { icon: list, color: 'var(--ion-color-medium)' },
+};
+
 
 const Home: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -35,6 +49,9 @@ const Home: React.FC = () => {
   const [pendingClosureDate, setPendingClosureDate] = useState<string | null>(null);
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [varkoState, setVarkoState] = useState<VarkoState | null>(null);
+  const [dailyPhrase, setDailyPhrase] = useState<DailyPhrase | null>(null);
+  const [isVarkoProfileOpen, setIsVarkoProfileOpen] = useState(false);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -59,7 +76,21 @@ const Home: React.FC = () => {
     if (pendingDate) {
       setPendingClosureDate(pendingDate);
     }
+
+    loadVarko();
+    loadPhrase();
   };
+
+  const loadPhrase = async () => {
+    const p = await phraseService.getDailyPhrase();
+    setDailyPhrase(p);
+  };
+
+  const loadVarko = async () => {
+    const state = await varkoService.getVarkoState();
+    setVarkoState(state);
+  };
+
 
   const loadTasks = async () => {
     try {
@@ -77,8 +108,20 @@ const Home: React.FC = () => {
 
   const toggleTask = async (task: Task) => {
     try {
-      await taskService.toggleTaskCompletion(task.id!, task.completed === 1 ? 0 : 1);
+      const newStatus = task.completed === 1 ? 0 : 1;
+      await taskService.toggleTaskCompletion(task.id!, newStatus);
+
+      if (newStatus === 1) {
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 },
+          colors: ['#3880ff', '#2dd36f', '#ffc409']
+        });
+      }
+
       loadTasks();
+      loadVarko();
     } catch (error) {
       console.error('Failed to toggle task', error);
     }
@@ -102,26 +145,30 @@ const Home: React.FC = () => {
     <IonPage>
       <IonHeader className="ion-no-border">
         <IonToolbar color="dark">
-          <IonTitle style={{ fontWeight: 800, fontSize: '1.4rem', letterSpacing: '1px' }}>FORJA</IonTitle>
+          <IonTitle slot="start" style={{ fontWeight: 900, fontSize: '1.2rem', letterSpacing: '1px' }}>FORJA</IonTitle>
           <IonButtons slot="end">
-            <div className="theme-toggle-container">
-              <IonIcon icon={isDarkMode ? moon : sunny} color={isDarkMode ? 'warning' : 'medium'} />
+            {streak && (
+              <IonBadge color="warning" style={{ marginRight: '4px', padding: '6px 10px', borderRadius: '8px', display: 'flex', alignItems: 'center', fontSize: '0.85rem' }}>
+                <IonIcon icon={flash} style={{ marginRight: '2px' }} /> {streak.current_streak}
+              </IonBadge>
+            )}
+            <IonButton fill="clear" onClick={() => setIsVarkoProfileOpen(true)} style={{ margin: 0, '--padding-start': '4px', '--padding-end': '4px' }}>
+              <IonIcon icon={heart} color="danger" style={{ fontSize: '1.3rem' }} />
+            </IonButton>
+            <div style={{ display: 'flex', alignItems: 'center', marginLeft: '2px', marginRight: '4px' }}>
+              <IonIcon icon={isDarkMode ? moon : sunny} color={isDarkMode ? 'warning' : 'medium'} style={{ fontSize: '1.1rem', marginRight: '2px' }} />
               <IonToggle
                 checked={isDarkMode}
                 onIonChange={(e) => toggleTheme(e.detail.checked)}
+                style={{ '--handle-spacing': '1px', transform: 'scale(0.8)' }}
               />
             </div>
-            {streak && (
-              <IonBadge color="warning" style={{ marginRight: '16px', padding: '6px 12px', borderRadius: '8px', display: 'flex', alignItems: 'center' }}>
-                <IonIcon icon={flash} style={{ marginRight: '4px' }} /> {streak.current_streak}
-              </IonBadge>
-            )}
           </IonButtons>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen className="home-container">
         <div className="ion-padding">
-          <div className="date-header" style={{ marginBottom: '32px' }}>
+          <div className="date-header" style={{ marginBottom: '24px' }}>
             <IonText color="medium">
               <h1 style={{ margin: 0, fontWeight: 800, fontSize: '2.5rem', textTransform: 'capitalize' }}>Hoy</h1>
               <p style={{ margin: '4px 0 0 0', fontSize: '1rem', fontStyle: 'italic' }}>
@@ -129,6 +176,27 @@ const Home: React.FC = () => {
               </p>
             </IonText>
           </div>
+
+          {dailyPhrase && (
+            <div className="phrase-container" style={{
+              background: 'rgba(var(--ion-text-color-rgb, 0,0,0), 0.05)',
+              padding: '20px',
+              borderRadius: '20px',
+              marginBottom: '32px',
+              borderLeft: '5px solid var(--ion-color-primary)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+            }}>
+              <IonText style={{ color: 'var(--ion-text-color)' }}>
+                <p style={{ margin: 0, fontSize: '1.1rem', lineHeight: '1.5', fontWeight: 500, fontStyle: 'italic', color: 'inherit' }}>
+                  "{dailyPhrase.phrase}"
+                </p>
+                <p style={{ margin: '12px 0 0 0', fontSize: '0.85rem', opacity: 0.6, textAlign: 'right', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '1px', color: 'inherit' }}>
+                  — {dailyPhrase.author}
+                </p>
+              </IonText>
+            </div>
+          )}
+
 
           <IonList className="task-list" lines="none">
             {tasks.length === 0 && (
@@ -154,11 +222,22 @@ const Home: React.FC = () => {
                   <IonLabel style={{
                     opacity: task.completed === 1 ? 0.5 : 1
                   }}>
-                    <div className="task-title" style={{
-                      fontSize: '1.1rem',
-                      fontWeight: 600,
-                      textDecoration: task.completed === 1 ? 'line-through' : 'none',
-                    }}>{task.title}</div>
+                    <div className="task-title-container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {task.category && task.category !== 'default' && (
+                        <IonIcon
+                          icon={CATEGORY_MAP[task.category]?.icon || list}
+                          style={{
+                            color: CATEGORY_MAP[task.category]?.color || 'var(--ion-color-medium)',
+                            fontSize: '1.2rem'
+                          }}
+                        />
+                      )}
+                      <div className="task-title" style={{
+                        fontSize: '1.1rem',
+                        fontWeight: 600,
+                        textDecoration: task.completed === 1 ? 'line-through' : 'none',
+                      }}>{task.title}</div>
+                    </div>
                     {task.due_time && (
                       <div className="task-time" style={{ marginTop: '4px', fontSize: '0.9rem' }}>
                         <IonText color="primary">
@@ -196,7 +275,14 @@ const Home: React.FC = () => {
           dateToClose={pendingClosureDate || ''}
           onClosed={onDayClosed}
         />
+
+        <VarkoProfileModal
+          isOpen={isVarkoProfileOpen}
+          onDismiss={() => setIsVarkoProfileOpen(false)}
+          state={varkoState}
+        />
       </IonContent>
+      <VarkoRoaming state={varkoState} />
     </IonPage>
   );
 };

@@ -12,9 +12,11 @@ import {
     IonList,
     IonButtons,
     IonIcon,
-    IonText
+    IonText,
+    IonSelect,
+    IonSelectOption
 } from '@ionic/react';
-import { close, save, flash } from 'ionicons/icons';
+import { close, flash, briefcase, fitness, school, person, list } from 'ionicons/icons';
 import taskService from '../services/TaskService';
 
 interface AddTaskModalProps {
@@ -24,9 +26,18 @@ interface AddTaskModalProps {
     date: string;
 }
 
+const CATEGORIES = [
+    { label: 'Trabajo', value: 'Trabajo', icon: briefcase },
+    { label: 'Salud', value: 'Salud', icon: fitness },
+    { label: 'Estudio', value: 'Estudio', icon: school },
+    { label: 'Personal', value: 'Personal', icon: person },
+    { label: 'Otros', value: 'Otros', icon: list },
+];
+
 const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onDismiss, onTaskAdded, date }) => {
     const [title, setTitle] = useState('');
     const [time, setTime] = useState<string | undefined>(undefined);
+    const [category, setCategory] = useState('Otros');
 
     const handleAdd = async () => {
         if (!title.trim()) return;
@@ -35,11 +46,13 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onDismiss, onTaskAd
             await taskService.addTask({
                 title,
                 completed: 0,
+                category,
                 date,
                 due_time: time
             });
             setTitle('');
             setTime(undefined);
+            setCategory('Otros');
             onTaskAdded();
             onDismiss();
         } catch (error) {
@@ -75,7 +88,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onDismiss, onTaskAd
                             '--background': 'var(--ion-color-step-100, #f4f4f4)',
                             '--border-radius': '16px',
                             '--padding-start': '16px',
-                            marginBottom: '20px',
+                            marginBottom: '16px',
                             '--box-shadow': '0 2px 8px rgba(0,0,0,0.05)'
                         }}>
                             <IonLabel position="stacked" color="primary" style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '8px' }}>NOMBRE DEL DESAFÍO</IonLabel>
@@ -85,6 +98,28 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onDismiss, onTaskAd
                                 onIonInput={(e) => setTitle(e.detail.value!)}
                                 style={{ fontSize: '1.2rem', fontWeight: 500, '--padding-top': '8px', '--padding-bottom': '12px' }}
                             />
+                        </IonItem>
+
+                        <IonItem style={{
+                            '--background': 'var(--ion-color-step-100, #f4f4f4)',
+                            '--border-radius': '16px',
+                            '--padding-start': '16px',
+                            marginBottom: '16px',
+                            '--box-shadow': '0 2px 8px rgba(0,0,0,0.05)'
+                        }}>
+                            <IonLabel position="stacked" color="primary" style={{ fontWeight: 700, fontSize: '0.9rem', marginBottom: '8px' }}>CATEGORÍA</IonLabel>
+                            <IonSelect
+                                value={category}
+                                interface="popover"
+                                onIonChange={(e) => setCategory(e.detail.value)}
+                                style={{ width: '100%', '--padding-top': '8px', '--padding-bottom': '12px' }}
+                            >
+                                {CATEGORIES.map(cat => (
+                                    <IonSelectOption key={cat.value} value={cat.value}>
+                                        {cat.label}
+                                    </IonSelectOption>
+                                ))}
+                            </IonSelect>
                         </IonItem>
 
                         <IonItem style={{
@@ -114,6 +149,7 @@ const AddTaskModal: React.FC<AddTaskModalProps> = ({ isOpen, onDismiss, onTaskAd
                 </div>
             </IonContent>
         </IonModal>
+
     );
 };
 

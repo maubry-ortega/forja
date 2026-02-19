@@ -115,7 +115,32 @@ class DayService {
         };
     }
 
+    async getCategoryStats() {
+        const db = await databaseService.getDb();
+        const res = await db.query('SELECT category, completed FROM tasks');
+        const tasks = res.values || [];
 
+        const stats: Record<string, { total: number; completed: number; percentage: number }> = {};
+
+        tasks.forEach(t => {
+            const cat = t.category || 'Otros';
+            const categoryKey = cat === 'default' ? 'Otros' : cat;
+
+            if (!stats[categoryKey]) {
+                stats[categoryKey] = { total: 0, completed: 0, percentage: 0 };
+            }
+            stats[categoryKey].total++;
+            if (t.completed === 1) {
+                stats[categoryKey].completed++;
+            }
+        });
+
+        Object.keys(stats).forEach(cat => {
+            stats[cat].percentage = Math.round((stats[cat].completed / stats[cat].total) * 100);
+        });
+
+        return stats;
+    }
 }
 
 export const dayService = new DayService();

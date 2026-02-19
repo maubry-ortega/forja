@@ -128,6 +128,10 @@ class DatabaseService {
             await this.db.execute("ALTER TABLE daily_logs ADD COLUMN reflection TEXT;").catch(() => { });
             // Add due_time to tasks if missing
             await this.db.execute("ALTER TABLE tasks ADD COLUMN due_time TEXT;").catch(() => { });
+
+            // Add Indexes for performance
+            await this.db.execute("CREATE INDEX IF NOT EXISTS idx_tasks_date ON tasks(date);").catch(() => { });
+            await this.db.execute("CREATE INDEX IF NOT EXISTS idx_daily_logs_date ON daily_logs(date);").catch(() => { });
         } catch (e) {
             console.warn('Migrations already applied or failed safely');
         }

@@ -1,4 +1,6 @@
 import databaseService from './DatabaseService';
+import notificationService from './NotificationService';
+
 
 export interface Task {
     id?: number;
@@ -16,6 +18,15 @@ class TaskService {
         const params = [task.title, task.completed, task.category || 'default', task.date, task.due_time || null];
         const res = await db.run(query, params);
         await databaseService.save();
+
+        if (task.due_time && res.changes?.lastId) {
+            try {
+                await notificationService.scheduleTaskNotification({ ...task, id: Number(res.changes.lastId) });
+            } catch (notifyError) {
+                console.warn('Failed to schedule notification', notifyError);
+            }
+        }
+
         return res;
     }
 
@@ -41,6 +52,7 @@ class TaskService {
         const query = 'DELETE FROM tasks WHERE id = ?';
         const res = await db.run(query, [id]);
         await databaseService.save();
+        await notificationService.cancelNotification(id);
         return res;
     }
 
