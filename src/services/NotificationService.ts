@@ -84,8 +84,8 @@ class NotificationService {
         await LocalNotifications.schedule({
             notifications: [
                 {
-                    title: 'Forja tu Voluntad',
-                    body: 'No has forjado ningún desafío para hoy. ¡Empieza ahora!',
+                    title: 'Tu Voluntad te Espera, Guerrero',
+                    body: 'El día avanza y el fuego de tu forja está apagado. Crea un desafío ahora.',
                     id: TASK_PROMPT_ID,
                     schedule: {
                         on: {

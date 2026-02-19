@@ -23,11 +23,13 @@ import {
     IonButtons,
     IonButton
 } from '@ionic/react';
-import { trophy, calendar, trendingUp, flash, ribbon, download } from 'ionicons/icons';
+import { trophy, calendar, trendingUp, flash, ribbon, download, analytics } from 'ionicons/icons';
 import { dayService, DailyLog } from '../services/DayService';
 import achievementService, { Achievement } from '../services/AchievementService';
+import analyticsService, { WeeklyReport } from '../services/AnalyticsService';
 import databaseService from '../services/DatabaseService';
 import streakService from '../services/StreakService';
+import ProgressReportModal from '../components/modals/ProgressReportModal';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -61,11 +63,12 @@ const History: React.FC = () => {
     const [chartData, setChartData] = useState<{ labels: string[]; data: number[] } | null>(null);
     const [categoryStats, setCategoryStats] = useState<Record<string, { total: number; completed: number; percentage: number }> | null>(null);
     const [achievements, setAchievements] = useState<Achievement[]>([]);
-
-
+    const [isReportOpen, setIsReportOpen] = useState(false);
+    const [currentReport, setCurrentReport] = useState<WeeklyReport | null>(null);
 
     useEffect(() => {
         loadData();
+        checkAutoReport();
     }, []);
 
     const loadData = async () => {
@@ -80,6 +83,29 @@ const History: React.FC = () => {
         setChartData(cData);
         setCategoryStats(cStats);
         setAchievements(achs);
+    };
+
+    const checkAutoReport = async () => {
+        const today = new Date();
+        const todayStr = today.toISOString().split('T')[0];
+        const lastAutoReport = localStorage.getItem('last_auto_report_date');
+
+        // Trigger every Sunday
+        if (today.getDay() === 0 && lastAutoReport !== todayStr) {
+            await handleGenerateReport();
+            localStorage.setItem('last_auto_report_date', todayStr);
+        }
+    };
+
+    const handleGenerateReport = async () => {
+        try {
+            const today = new Date().toISOString().split('T')[0];
+            const report = await analyticsService.generateWeeklyReport(today);
+            setCurrentReport(report);
+            setIsReportOpen(true);
+        } catch (error) {
+            console.error('Failed to generate report', error);
+        }
     };
 
     const handleRefresh = async (event: CustomEvent<RefresherEventDetail>) => {
@@ -164,6 +190,9 @@ const History: React.FC = () => {
                 <IonToolbar>
                     <IonTitle style={{ fontWeight: 800, color: 'var(--header-text-color)' }}>MÉTRICAS</IonTitle>
                     <IonButtons slot="end">
+                        <IonButton onClick={handleGenerateReport} color="primary" fill="clear">
+                            <IonIcon icon={analytics} slot="icon-only" />
+                        </IonButton>
                         <IonButton onClick={exportData}>
                             <IonIcon icon={download} slot="icon-only" />
                         </IonButton>
@@ -174,6 +203,12 @@ const History: React.FC = () => {
                 <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
                     <IonRefresherContent />
                 </IonRefresher>
+
+                <ProgressReportModal
+                    isOpen={isReportOpen}
+                    onDismiss={() => setIsReportOpen(false)}
+                    report={currentReport}
+                />
 
                 <div className="ion-padding">
                     <IonGrid>

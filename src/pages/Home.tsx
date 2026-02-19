@@ -22,6 +22,7 @@ import {
 } from '@ionic/react';
 import { add, trash, flash, moon, sunny, briefcase, fitness, school, person, list, heart } from 'ionicons/icons';
 import React, { useEffect, useState } from 'react';
+import taskService, { Task } from '../services/TaskService';
 import streakService, { Streak } from '../services/StreakService';
 import dayService from '../services/DayService';
 import notificationService from '../services/NotificationService';
@@ -32,6 +33,7 @@ import { usePhrase } from '../hooks/usePhrase';
 import DayClosureModal from '../components/modals/DayClosureModal';
 import AddTaskModal from '../components/modals/AddTaskModal';
 import VarkoProfileModal from '../components/modals/VarkoProfileModal';
+import TaskPromptModal from '../components/modals/TaskPromptModal';
 import VarkoRoaming from '../components/ui/VarkoRoaming';
 import './Home.css';
 
@@ -51,6 +53,7 @@ const Home: React.FC = () => {
   const [isAddTaskModalOpen, setIsAddTaskModalOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isVarkoProfileOpen, setIsVarkoProfileOpen] = useState(false);
+  const [showTaskPrompt, setShowTaskPrompt] = useState(false);
 
   // Custom Hooks
   const { tasks, loadTasks, toggleTask, deleteTask } = useTasks(today);
@@ -65,7 +68,7 @@ const Home: React.FC = () => {
   }, []);
 
   const initialize = async () => {
-    await loadTasks();
+    const loadedTasks = await loadTasks();
     await loadStreak();
     await loadVarko();
     await loadPhrase();
@@ -74,6 +77,15 @@ const Home: React.FC = () => {
     const pendingDate = await dayService.getPreviousClosingPending(today);
     if (pendingDate) {
       setPendingClosureDate(pendingDate);
+    }
+
+    // Logic for Task Prompt Modal
+    const lastPromptDate = localStorage.getItem('last_task_prompt_date');
+    const tasks_count = (await taskService.getTasksByDate(today))?.length || 0;
+
+    if (tasks_count === 0 && lastPromptDate !== today) {
+      setShowTaskPrompt(true);
+      localStorage.setItem('last_task_prompt_date', today);
     }
 
     notificationService.scheduleReflectionReminder();
@@ -233,6 +245,12 @@ const Home: React.FC = () => {
           isOpen={isVarkoProfileOpen}
           onDismiss={() => setIsVarkoProfileOpen(false)}
           state={varkoState}
+        />
+
+        <TaskPromptModal
+          isOpen={showTaskPrompt}
+          onDismiss={() => setShowTaskPrompt(false)}
+          onAction={() => setIsAddTaskModalOpen(true)}
         />
       </IonContent>
       <VarkoRoaming state={varkoState} />
