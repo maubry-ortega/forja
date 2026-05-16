@@ -6,73 +6,66 @@ class DatabaseService {
     private db!: SQLiteDBConnection;
     private readonly DB_NAME = 'forja_db';
 
+    private initPromise: Promise<void> | null = null;
+
     async initialize() {
-        console.log('DatabaseService: Initializing...');
-        try {
-            if (Capacitor.getPlatform() === 'web') {
-                const jeepSqliteElem = document.querySelector('jeep-sqlite');
-                if (jeepSqliteElem) {
-                    await this.initWeb(jeepSqliteElem);
-                } else {
-                    console.warn('DatabaseService: jeep-sqlite element not found in DOM');
+        if (this.initPromise) return this.initPromise;
+
+        this.initPromise = (async () => {
+            console.log('DatabaseService: Initializing...');
+            try {
+                if (Capacitor.getPlatform() === 'web') {
+                    const jeepSqliteElem = document.querySelector('jeep-sqlite');
+                    if (jeepSqliteElem) {
+                        await this.initWeb(jeepSqliteElem);
+                    } else {
+                        console.warn('DatabaseService: jeep-sqlite element not found in DOM');
+                    }
                 }
+
+                const ret = await this.sqlite.checkConnectionsConsistency();
+                const isConn = (await this.sqlite.isConnection(this.DB_NAME, false)).result;
+
+                if (ret.result && isConn) {
+                    console.log('DatabaseService: Retrieving existing connection');
+                    this.db = await this.sqlite.retrieveConnection(this.DB_NAME, false);
+                } else {
+                    console.log('DatabaseService: Creating new connection');
+                    this.db = await this.sqlite.createConnection(this.DB_NAME, false, 'no-encryption', 1, false);
+                }
+
+                await this.db.open();
+                console.log('DatabaseService: Database opened');
+                await this.createTables();
+
+                if (Capacitor.getPlatform() === 'web') {
+                    await this.sqlite.saveToStore(this.DB_NAME);
+                }
+                console.log('DatabaseService: Initialization complete');
+            } catch (error) {
+                console.error('DatabaseService: Initialization failed', error);
+                this.initPromise = null; // Allow retry on failure
+                throw error;
             }
+        })();
 
-            const ret = await this.sqlite.checkConnectionsConsistency();
-            const isConn = (await this.sqlite.isConnection(this.DB_NAME, false)).result;
-
-            if (ret.result && isConn) {
-                console.log('DatabaseService: Retrieving existing connection');
-                this.db = await this.sqlite.retrieveConnection(this.DB_NAME, false);
-            } else {
-                console.log('DatabaseService: Creating new connection');
-                this.db = await this.sqlite.createConnection(this.DB_NAME, false, 'no-encryption', 1, false);
-            }
-
-            await this.db.open();
-            console.log('DatabaseService: Database opened');
-            await this.createTables();
-
-            if (Capacitor.getPlatform() === 'web') {
-                await this.sqlite.saveToStore(this.DB_NAME);
-            }
-            console.log('DatabaseService: Initialization complete');
-        } catch (error) {
-            console.error('DatabaseService: Initialization failed', error);
-        }
+        return this.initPromise;
     }
 
     private async initWeb(jeepSqliteElem: any) {
         console.log('DatabaseService: Initializing web store...');
-        return new Promise<void>((resolve) => {
-            const timeout = setTimeout(() => {
-                console.warn('DatabaseService: jeepSqliteReady timed out, attempting initWebStore anyway');
-                this.sqlite.initWebStore().then(() => resolve()).catch(() => resolve());
-            }, 2000);
 
-            const handleReady = async () => {
-                clearTimeout(timeout);
-                console.log('DatabaseService: jeepSqliteReady event received');
-                jeepSqliteElem.removeEventListener('jeepSqliteReady', handleReady);
-                try {
-                    await this.sqlite.initWebStore();
-                    console.log('DatabaseService: Web store initialized');
-                    resolve();
-                } catch (error) {
-                    console.error('DatabaseService: initWebStore failed', error);
-                    resolve();
-                }
-            };
-            jeepSqliteElem.addEventListener('jeepSqliteReady', handleReady);
+        // If the element is already ready, just init and return
+        if (jeepSqliteElem.componentOnReady) {
+            await jeepSqliteElem.componentOnReady();
+        }
 
-            // If it's already rendered, it might have missed the event
-            // Note: Stencil elements often have a componentOnReady() method
-            if (jeepSqliteElem.componentOnReady) {
-                jeepSqliteElem.componentOnReady().then(() => {
-                    console.log('DatabaseService: jeep-sqlite component is ready (via componentOnReady)');
-                });
-            }
-        });
+        try {
+            await this.sqlite.initWebStore();
+            console.log('DatabaseService: Web store initialized');
+        } catch (error) {
+            console.warn('DatabaseService: initWebStore failed (might be already initialized)', error);
+        }
     }
 
 
@@ -204,9 +197,7 @@ class DatabaseService {
 
 
     async getDb() {
-        if (!this.db) {
-            await this.initialize();
-        }
+        await this.initialize();
         return this.db;
     }
 

@@ -50,6 +50,25 @@ const VarkoRoaming: React.FC<VarkoRoamingProps> = ({ state }) => {
         return () => clearInterval(interval);
     }, [state, moveVarko]);
 
+    useEffect(() => {
+        if (!state) return;
+
+        // Random idle messages
+        const idleInterval = setInterval(() => {
+            if (activeMessage) return; // Don't interrupt active message
+
+            const roll = Math.random();
+            if (roll > 0.7) { // 30% chance every 10s
+                const moodMessages = VARKO_MESSAGES[state.mood] || VARKO_MESSAGES['Neutral'];
+                const randomMsg = moodMessages[Math.floor(Math.random() * moodMessages.length)];
+                setActiveMessage(randomMsg);
+                setTimeout(() => setActiveMessage(null), 3000);
+            }
+        }, 10000);
+
+        return () => clearInterval(idleInterval);
+    }, [state, activeMessage]);
+
     const handleTap = () => {
         if (!state) return;
 
@@ -67,6 +86,7 @@ const VarkoRoaming: React.FC<VarkoRoamingProps> = ({ state }) => {
     if (!state) return null;
 
     const getMoodColor = () => {
+        if (!state) return 'transparent';
         switch (state.mood) {
             case 'Feroz': return 'rgba(255, 68, 68, 0.4)';
             case 'Motivado': return 'rgba(45, 211, 111, 0.4)';

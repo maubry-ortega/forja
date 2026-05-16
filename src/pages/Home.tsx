@@ -195,12 +195,17 @@ const Home: React.FC = () => {
               </div>
             )}
             {allTasks.map((task) => (
-              <IonItemSliding key={task.id}>
+              <IonItemSliding key={task.isRitual ? `ritual-${task.ritualId}` : `task-${task.id}`}>
                 <IonItem className={`task-item ${task.isRitual ? 'ritual-item' : ''}`} style={{
-                  '--background': task.isRitual ? 'rgba(var(--ion-color-primary-rgb), 0.05)' : 'var(--ion-item-background, var(--ion-background-color))',
-                  marginBottom: '16px',
-                  borderRadius: '16px',
-                  border: task.id === masterTaskId ? '2px solid var(--ion-color-warning)' : 'none'
+                  '--background': task.id === masterTaskId ? 'rgba(var(--ion-color-warning-rgb), 0.08)' :
+                    task.isRitual ? 'rgba(var(--ion-color-primary-rgb), 0.05)' :
+                      'var(--ion-item-background, var(--ion-background-color))',
+                  marginBottom: '14px',
+                  borderRadius: '18px',
+                  border: task.id === masterTaskId ? '2px solid var(--ion-color-warning)' :
+                    task.isRitual ? '1px dashed rgba(var(--ion-color-primary-rgb), 0.3)' : 'none',
+                  boxShadow: task.id === masterTaskId ? '0 4px 12px rgba(255, 196, 9, 0.15)' : 'none',
+                  transition: 'all 0.3s ease'
                 }}>
                   <IonCheckbox
                     slot="start"
@@ -219,32 +224,39 @@ const Home: React.FC = () => {
                       }
                     }}
                     color={task.id === masterTaskId ? "warning" : "success"}
+                    style={{ '--border-radius': '6px' }}
                   />
                   <IonLabel style={{
                     opacity: (task.completed === 1 || task.isExpired) ? 0.5 : 1
                   }}>
                     <div className="task-title-container" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      {task.isRitual && <IonIcon icon={star} color="primary" style={{ fontSize: '0.9rem' }} />}
-                      {task.id === masterTaskId && <IonIcon icon={trophy} color="warning" style={{ fontSize: '0.9rem' }} />}
+                      {task.isRitual && <IonIcon icon={trophy} color="primary" style={{ fontSize: '1rem' }} />}
+                      {task.id === masterTaskId && <IonIcon icon={star} color="warning" style={{ fontSize: '1.1rem' }} />}
                       <div className="task-title" style={{
-                        fontSize: '1.1rem',
+                        fontSize: '1.15rem',
                         fontWeight: (task.isRitual || task.id === masterTaskId) ? 800 : 600,
                         textDecoration: task.completed === 1 ? 'line-through' : 'none',
-                        color: task.isExpired ? 'var(--ion-color-danger)' : 'inherit'
+                        color: task.isExpired ? 'var(--ion-color-danger)' : 'inherit',
+                        letterSpacing: (task.isRitual || task.id === masterTaskId) ? '0.3px' : 'normal'
                       }}>
                         {task.title}
-                        {task.isRitual && <span style={{ fontSize: '0.7rem', marginLeft: '6px', opacity: 0.6 }}>(Ritual)</span>}
+                        {task.isRitual && <IonBadge color="primary" style={{ fontSize: '0.6rem', marginLeft: '8px', verticalAlign: 'middle', borderRadius: '4px' }}>RITUAL</IonBadge>}
                       </div>
                     </div>
                     {(task.due_time || task.isExpired) && (
-                      <div className="task-time" style={{ marginTop: '4px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <div className="task-time" style={{ marginTop: '6px', fontSize: '0.85rem', display: 'flex', alignItems: 'center', gap: '4px', opacity: 0.8 }}>
                         <IonIcon icon={task.isExpired ? alertCircleOutline : timeOutline} color={task.isExpired ? 'danger' : 'primary'} />
-                        <IonText color={task.isExpired ? 'danger' : 'primary'}>
-                          {task.isExpired ? 'Expirado' : task.due_time}
+                        <IonText color={task.isExpired ? 'danger' : 'primary'} style={{ fontWeight: 700 }}>
+                          {task.isExpired ? 'EXPIRADO' : `Límite: ${task.due_time}`}
                         </IonText>
                       </div>
                     )}
                   </IonLabel>
+                  {task.category && !task.isRitual && (
+                    <IonBadge slot="end" color="light" style={{ opacity: 0.6, fontSize: '0.65rem' }}>
+                      {task.category}
+                    </IonBadge>
+                  )}
                 </IonItem>
                 {!task.isRitual && (
                   <IonItemOptions side="end">
